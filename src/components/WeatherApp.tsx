@@ -11,6 +11,21 @@ interface WeatherData {
   sys: { country: string };
 }
 
+interface ForecastItem {
+  dt: number;
+  main: { temp: number; temp_min: number; temp_max: number };
+  weather: { description: string; main: string; icon: string }[];
+}
+
+interface DayForecast {
+  date: string;
+  dayName: string;
+  tempMin: number;
+  tempMax: number;
+  condition: string;
+  icon: string;
+}
+
 const weatherIcons: Record<string, string> = {
   Clear: "☀️",
   Clouds: "☁️",
@@ -23,9 +38,12 @@ const weatherIcons: Record<string, string> = {
   Fog: "🌫️",
 };
 
+const API_KEY = "2b3cc35e531c62c5694d0540a058caa3";
+
 const WeatherApp = () => {
   const [city, setCity] = useState("");
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<DayForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,23 +52,61 @@ const WeatherApp = () => {
     setLoading(true);
     setError("");
     try {
-      const apiKey = "2b3cc35e531c62c5694d0540a058caa3";
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`
-      );
-      const data = await res.json();
-      if (data.cod !== 200) {
+      const [currentRes, forecastRes] = await Promise.all([
+        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`),
+        fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`),
+      ]);
+      const currentData = await currentRes.json();
+      const forecastData = await forecastRes.json();
+
+      if (currentData.cod !== 200) {
         setError("City not found");
         setWeather(null);
+        setForecast([]);
       } else {
-        setWeather(data);
+        setWeather(currentData);
+        setForecast(parseForecast(forecastData.list));
         setError("");
       }
     } catch {
       setError("Something went wrong");
       setWeather(null);
+      setForecast([]);
     }
     setLoading(false);
+  };
+
+  const parseForecast = (list: ForecastItem[]): DayForecast[] => {
+    const days: Record<string, { temps: number[]; conditions: string[]; icons: string[] }> = {};
+    const today = new Date().toDateString();
+
+    list.forEach((item) => {
+      const date = new Date(item.dt * 1000);
+      const key = date.toDateString();
+      if (key === today) return;
+      if (!days[key]) days[key] = { temps: [], conditions: [], icons: [] };
+      days[key].temps.push(item.main.temp);
+      days[key].conditions.push(item.weather[0].main);
+      days[key].icons.push(item.weather[0].main);
+    });
+
+    return Object.entries(days).slice(0, 5).map(([dateStr, data]) => {
+      const date = new Date(dateStr);
+      const conditionCounts = data.conditions.reduce((acc, c) => {
+        acc[c] = (acc[c] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      const topCondition = Object.entries(conditionCounts).sort((a, b) => b[1] - a[1])[0][0];
+
+      return {
+        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        dayName: date.toLocaleDateString("en-US", { weekday: "short" }),
+        tempMin: Math.round(Math.min(...data.temps)),
+        tempMax: Math.round(Math.max(...data.temps)),
+        condition: topCondition,
+        icon: topCondition,
+      };
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -63,7 +119,7 @@ const WeatherApp = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="glass glow-primary rounded-2xl overflow-hidden"
+        className="glass rounded-2xl overflow-hidden"
       >
         {/* Header */}
         <div className="p-8 pb-6">
@@ -88,7 +144,7 @@ const WeatherApp = () => {
                 onChange={(e) => setCity(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter city name..."
-                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 pl-11
+                className="w-full bg-secondary/50 border border-border rounded-xl px-4 py-3 pl-11
                   text-foreground text-sm tracking-wide placeholder:text-muted-foreground
                   focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20
                   transition-all duration-300"
@@ -100,12 +156,13 @@ const WeatherApp = () => {
               whileTap={{ scale: 0.95 }}
               onClick={fetchWeather}
               disabled={loading}
-              className="bg-primary/10 border border-primary/30 text-primary rounded-xl px-5
-                hover:bg-primary/20 transition-all duration-300 flex items-center gap-2
-                disabled:opacity-50 font-display text-xs tracking-widest uppercase"
+              className="bg-primary text-primary-foreground rounded-xl px-5
+                hover:bg-primary/90 transition-all duration-300 flex items-center gap-2
+                disabled:opacity-50 font-display text-xs tracking-widest uppercase
+                shadow-md hover:shadow-lg"
             >
               {loading ? (
-                <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
                 <Search className="w-4 h-4" />
               )}
@@ -127,7 +184,7 @@ const WeatherApp = () => {
           )}
         </AnimatePresence>
 
-        {/* Weather Data */}
+        {/* Current Weather */}
         <AnimatePresence mode="wait">
           {weather && (
             <motion.div
@@ -136,12 +193,10 @@ const WeatherApp = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
-              className="px-8 pb-8"
+              className="px-8 pb-6"
             >
-              {/* Divider */}
               <div className="h-px bg-border mb-6" />
 
-              {/* City & Temp */}
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h2 className="font-display text-lg font-bold tracking-wider text-foreground">
@@ -151,16 +206,13 @@ const WeatherApp = () => {
                     {weather.sys.country} · {weather.weather[0].description}
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-4xl" style={{ animation: "float 3s ease-in-out infinite" }}>
-                    {weatherIcons[weather.weather[0].main] || "🌤️"}
-                  </span>
-                </div>
+                <span className="text-4xl" style={{ animation: "float 3s ease-in-out infinite" }}>
+                  {weatherIcons[weather.weather[0].main] || "🌤️"}
+                </span>
               </div>
 
-              {/* Temperature display */}
               <div className="mb-6">
-                <span className="font-display text-5xl font-bold text-gradient glow-text">
+                <span className="font-display text-5xl font-bold text-gradient">
                   {Math.round(weather.main.temp)}°
                 </span>
                 <span className="text-muted-foreground text-sm ml-2 tracking-wide">
@@ -168,12 +220,57 @@ const WeatherApp = () => {
                 </span>
               </div>
 
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <StatCard icon={<Droplets className="w-4 h-4" />} label="Humidity" value={`${weather.main.humidity}%`} />
                 <StatCard icon={<Wind className="w-4 h-4" />} label="Wind" value={`${weather.wind.speed} m/s`} />
                 <StatCard icon={<Thermometer className="w-4 h-4" />} label="Pressure" value={`${weather.main.pressure} hPa`} />
                 <StatCard icon={<Eye className="w-4 h-4" />} label="Visibility" value={`${(weather.visibility / 1000).toFixed(1)} km`} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 5-Day Forecast */}
+        <AnimatePresence>
+          {forecast.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="px-8 pb-8"
+            >
+              <div className="h-px bg-border mb-5" />
+              <h3 className="font-display text-xs font-semibold tracking-[0.25em] uppercase text-muted-foreground mb-4">
+                5-Day Forecast
+              </h3>
+              <div className="space-y-2">
+                {forecast.map((day, i) => (
+                  <motion.div
+                    key={day.date}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + i * 0.08 }}
+                    className="flex items-center justify-between py-2.5 px-3 rounded-xl
+                      bg-secondary/30 hover:bg-secondary/50 transition-colors duration-200"
+                  >
+                    <div className="flex items-center gap-3 min-w-[100px]">
+                      <span className="text-lg">{weatherIcons[day.icon] || "🌤️"}</span>
+                      <div>
+                        <p className="font-display text-xs font-semibold tracking-wider text-foreground">
+                          {day.dayName}
+                        </p>
+                        <p className="text-xs text-muted-foreground tracking-wide">{day.date}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground tracking-wider capitalize">
+                      {day.condition}
+                    </p>
+                    <div className="flex items-center gap-2 font-display text-xs font-semibold">
+                      <span className="text-foreground">{day.tempMax}°</span>
+                      <span className="text-muted-foreground">{day.tempMin}°</span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
           )}
@@ -186,9 +283,10 @@ const WeatherApp = () => {
 const StatCard = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <motion.div
     whileHover={{ scale: 1.03 }}
-    className="bg-muted/30 border border-border/50 rounded-xl p-3 transition-colors hover:border-primary/20"
+    className="bg-secondary/40 border border-border/50 rounded-xl p-3 transition-colors hover:border-primary/20"
   >
-    <div className="flex items-center gap-2 text-primary mb-1">{icon}
+    <div className="flex items-center gap-2 text-primary mb-1">
+      {icon}
       <span className="text-xs text-muted-foreground tracking-[0.15em] uppercase">{label}</span>
     </div>
     <p className="font-display text-sm font-semibold text-foreground tracking-wider">{value}</p>
