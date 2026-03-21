@@ -6,54 +6,58 @@
 
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 92%;
+    --background: 210 30% 96%;
+    --foreground: 220 25% 14%;
 
-    --card: 220 40% 8%;
-    --card-foreground: 210 40% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 14%;
 
-    --popover: 220 40% 8%;
-    --popover-foreground: 210 40% 92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 14%;
 
-    --primary: 195 100% 50%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 210 90% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 260 60% 55%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 92%;
+    --secondary-foreground: 220 25% 20%;
 
-    --muted: 220 30% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 215 20% 93%;
+    --muted-foreground: 215 15% 45%;
 
-    --accent: 170 80% 45%;
-    --accent-foreground: 222 47% 6%;
+    --accent: 195 80% 42%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 30% 18%;
-    --input: 220 30% 15%;
-    --ring: 195 100% 50%;
+    --border: 215 20% 88%;
+    --input: 215 20% 90%;
+    --ring: 210 90% 45%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --glow-primary: 195 100% 50%;
-    --glow-secondary: 260 60% 55%;
-    --glow-accent: 170 80% 45%;
-    --glass-bg: 220 40% 10%;
-    --glass-border: 220 30% 22%;
+    --glow-primary: 210 90% 45%;
+    --glow-accent: 195 80% 42%;
+    --glass-bg: 0 0% 100%;
+    --glass-border: 215 20% 85%;
+
+    --city-building: 220 20% 78%;
+    --city-building-dark: 220 18% 65%;
+    --city-window: 45 80% 65%;
+    --city-sky-top: 210 60% 88%;
+    --city-sky-bottom: 210 30% 96%;
 
     --font-display: 'Orbitron', monospace;
     --font-body: 'Rajdhani', system-ui, sans-serif;
 
-    --sidebar-background: 220 40% 8%;
-    --sidebar-foreground: 210 40% 92%;
-    --sidebar-primary: 195 100% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 220 30% 14%;
-    --sidebar-accent-foreground: 210 40% 92%;
-    --sidebar-border: 220 30% 18%;
-    --sidebar-ring: 195 100% 50%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 220 25% 14%;
+    --sidebar-primary: 210 90% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 20% 93%;
+    --sidebar-accent-foreground: 220 25% 14%;
+    --sidebar-border: 215 20% 88%;
+    --sidebar-ring: 210 90% 45%;
   }
 }
 
@@ -74,19 +78,20 @@
   }
 
   .glass {
-    background: hsl(var(--glass-bg) / 0.5);
+    background: hsl(var(--glass-bg) / 0.75);
     backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--glass-border) / 0.4);
+    border: 1px solid hsl(var(--glass-border) / 0.6);
+    box-shadow: 0 8px 32px hsl(var(--glow-primary) / 0.08),
+                0 2px 8px hsl(220 20% 14% / 0.04);
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.15),
-                0 0 60px hsl(var(--glow-primary) / 0.05);
+    box-shadow: 0 4px 20px hsl(var(--glow-primary) / 0.1),
+                0 1px 4px hsl(220 20% 14% / 0.06);
   }
 
   .glow-text {
-    text-shadow: 0 0 20px hsl(var(--glow-primary) / 0.5),
-                 0 0 40px hsl(var(--glow-primary) / 0.2);
+    text-shadow: none;
   }
 
   .text-gradient {
@@ -97,28 +102,18 @@
   }
 }
 
-/* City skyline animation */
-@keyframes cityMove {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-@keyframes cityMoveReverse {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 }
 
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
+@keyframes cloud-drift {
+  0% { transform: translateX(-10%); }
+  100% { transform: translateX(110%); }
+}
+
+@keyframes window-flicker {
+  0%, 90%, 100% { opacity: 0.8; }
+  92% { opacity: 0.3; }
+  95% { opacity: 0.9; }
 }
