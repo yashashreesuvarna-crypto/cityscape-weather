@@ -22,12 +22,6 @@ A simple and responsive weather application that shows real-time weather data fo
 
 ---
 
-## 📸 Preview
-
-(Add screenshots here later)
-
----
-
 ## ⚙️ How It Works
 
 This app fetches real-time weather data using an API and displays it in a user-friendly interface.
